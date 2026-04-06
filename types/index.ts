@@ -41,6 +41,12 @@ export interface SimplePriceInputs {
   fixedCostsMonthly: number;
   variableCostPerUser: number;
   targetUsers: number;
+  /** App Store / Play Store vb. — liste fiyatı üzerinden % */
+  appStoreCommissionPercent: number;
+  /** Ödeme sağlayıcı (Stripe vb.) — liste fiyatı üzerinden yaklaşık % */
+  paymentProviderCommissionPercent: number;
+  /** Vergi / KDV vb. etkin kesinti — liste fiyatı üzerinden yaklaşık % */
+  salesTaxPercent: number;
 }
 
 export interface SimplePriceScenario {

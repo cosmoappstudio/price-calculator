@@ -6,7 +6,12 @@ import { Label } from "@/components/ui/label";
 import { TooltipIcon } from "@/components/shared/TooltipIcon";
 import type { SimplePriceInputs } from "@/types";
 import { formatCount, formatUsd } from "@/utils/formatCurrency";
-import { calculateBreakEven } from "@/utils/simplePriceFinder";
+import {
+  calculateBreakEven,
+  calculateGrossBreakEvenPrice,
+  getNetRetentionFraction,
+  grossUpForNet,
+} from "@/utils/simplePriceFinder";
 
 export function SimpleInputForm({
   inputs,
@@ -15,16 +20,18 @@ export function SimpleInputForm({
   inputs: SimplePriceInputs;
   onChange: (p: Partial<SimplePriceInputs>) => void;
 }) {
-  const breakEven = calculateBreakEven(inputs);
+  const breakEvenCost = calculateBreakEven(inputs);
   const u = Math.max(1, inputs.targetUsers);
   const fixedPu = inputs.fixedCostsMonthly / u;
+  const netFrac = getNetRetentionFraction(inputs);
+  const grossBreakEven = calculateGrossBreakEvenPrice(inputs);
 
   return (
     <Card className="mx-auto max-w-2xl border-border">
       <CardHeader>
         <CardTitle>Maliyetlerini gir</CardTitle>
         <CardDescription>
-          Sadece üç rakam. Başa baş ve üç fiyat önerisi otomatik hesaplanır.
+          Maliyetler, mağaza / ödeme komisyonu ve vergi ile brüt liste fiyatı hesaplanır.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -92,17 +99,106 @@ export function SimpleInputForm({
           </p>
         </div>
 
+        <div className="border-t border-border pt-6">
+          <p className="mb-4 text-sm font-medium text-foreground">Kesintiler (%)</p>
+          <div className="space-y-6">
+            <div>
+              <Label className="mb-2 flex items-center gap-1">
+                4. App Store / mağaza komisyonu
+                <TooltipIcon content="Apple veya Google IAP ücreti gibi. Liste fiyatı üzerinden yaklaşık yüzde olarak girin (ör. 15 veya 30)." />
+              </Label>
+              <Input
+                type="number"
+                className="font-mono text-xl"
+                min={0}
+                max={100}
+                step={0.1}
+                value={inputs.appStoreCommissionPercent}
+                onChange={(e) =>
+                  onChange({
+                    appStoreCommissionPercent: Math.min(
+                      100,
+                      Math.max(0, parseFloat(e.target.value) || 0)
+                    ),
+                  })
+                }
+              />
+              <p className="mt-1 text-sm text-muted-foreground">
+                %{inputs.appStoreCommissionPercent.toLocaleString("en-US")}
+              </p>
+            </div>
+            <div>
+              <Label className="mb-2 flex items-center gap-1">
+                5. Ödeme sağlayıcı komisyonu
+                <TooltipIcon content="Web ödemelerinde Stripe vb. yaklaşık yüzde. IAP kullanıyorsanız çoğunlukla 0 bırakın." />
+              </Label>
+              <Input
+                type="number"
+                className="font-mono text-xl"
+                min={0}
+                max={100}
+                step={0.1}
+                value={inputs.paymentProviderCommissionPercent}
+                onChange={(e) =>
+                  onChange({
+                    paymentProviderCommissionPercent: Math.min(
+                      100,
+                      Math.max(0, parseFloat(e.target.value) || 0)
+                    ),
+                  })
+                }
+              />
+              <p className="mt-1 text-sm text-muted-foreground">
+                %{inputs.paymentProviderCommissionPercent.toLocaleString("en-US")}
+              </p>
+            </div>
+            <div>
+              <Label className="mb-2 flex items-center gap-1">
+                6. Vergi (etkin %)
+                <TooltipIcon content="KDV veya satış vergisi için basitleştirilmiş model: liste fiyatına uygulanan etkin kesinti yüzdesi. İkili vergi / kur farkı için muhasebe danışmanlığı önerilir." />
+              </Label>
+              <Input
+                type="number"
+                className="font-mono text-xl"
+                min={0}
+                max={100}
+                step={0.1}
+                value={inputs.salesTaxPercent}
+                onChange={(e) =>
+                  onChange({
+                    salesTaxPercent: Math.min(100, Math.max(0, parseFloat(e.target.value) || 0)),
+                  })
+                }
+              />
+              <p className="mt-1 text-sm text-muted-foreground">
+                %{inputs.salesTaxPercent.toLocaleString("en-US")}
+              </p>
+            </div>
+          </div>
+        </div>
+
         <div className="rounded-lg border border-primary/20 bg-primary/10 p-4">
-          <p className="mb-2 text-sm text-muted-foreground">Başa baş noktası (minimum fiyat)</p>
+          <p className="mb-2 text-sm text-muted-foreground">
+            Başa baş — brüt liste fiyatı (aylık)
+          </p>
           <p className="font-mono text-3xl font-bold text-foreground">
-            {formatUsd(Math.ceil(breakEven))}
+            {formatUsd(grossBreakEven)}
           </p>
           <p className="mt-2 text-xs text-muted-foreground">
-            = ({formatUsd(inputs.fixedCostsMonthly)} ÷ {formatCount(u)}) +{" "}
-            {formatUsd(inputs.variableCostPerUser)}
+            Kullanıcı başı maliyet: {formatUsd(breakEvenCost)} → nette karşılamak için{" "}
+            {formatUsd(grossUpForNet(breakEvenCost, inputs), {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            })}{" "}
+            brüt
           </p>
           <p className="text-xs text-muted-foreground">
-            = {formatUsd(fixedPu, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} +{" "}
+            Net tahsilat oranı: {(netFrac * 100).toFixed(2)}% (kesintiler çarpımı)
+          </p>
+          <p className="mt-2 text-xs text-muted-foreground">
+            Maliyet = ({formatUsd(inputs.fixedCostsMonthly)} ÷ {formatCount(u)}) +{" "}
+            {formatUsd(inputs.variableCostPerUser)} ={" "}
+            {formatUsd(fixedPu, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} +{" "}
             {formatUsd(inputs.variableCostPerUser)}
           </p>
         </div>

@@ -34,8 +34,10 @@ export function PriceFinderPage() {
       <div>
         <h1 className="text-2xl font-bold">Fiyat Belirle</h1>
         <p className="mt-2 text-muted-foreground">
-          Üç girdi ile başa baş fiyatı ve üç öneri (Minimum / İdeal / Maksimize) alın. Tüm tutarlar{" "}
-          <strong>USD</strong>. İdeal fiyatı ana hesaplayıcıya tek tıkla aktarın.
+          Maliyetler, App Store / ödeme komisyonu ve vergi ile brüt liste fiyatları hesaplanır. Üç öneri
+          (Minimum / İdeal / Maksimize). Tüm tutarlar <strong>USD</strong>. Kartlardaki fiyatlar kesintiler
+          sonrası hedef neti karşılayacak şekilde yukarı yuvarlanmış brüttür. İdeal fiyatı ana hesaplayıcıya
+          tek tıkla aktarın.
         </p>
       </div>
 

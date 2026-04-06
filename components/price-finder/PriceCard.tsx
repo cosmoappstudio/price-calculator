@@ -33,7 +33,7 @@ export function PriceCard({
         <CardTitle className="text-xl">{scenario.name}</CardTitle>
         <div className="mt-4">
           <p className="font-mono text-5xl font-bold text-primary">{formatUsd(scenario.price)}</p>
-          <p className="mt-1 text-sm text-muted-foreground">/ ay</p>
+          <p className="mt-1 text-sm text-muted-foreground">/ ay · brüt liste</p>
         </div>
         <p className="mt-2 text-sm text-muted-foreground">{scenario.description}</p>
         <p className="mt-1 text-xs text-muted-foreground">
